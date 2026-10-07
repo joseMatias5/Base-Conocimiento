@@ -1,0 +1,601 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { formatDate } from '@/lib/formatDate';
+import {
+  Clock,
+  Bell,
+  Edit,
+  History,
+  Plus,
+  Minus,
+  Trash2,
+  X,
+  CheckCheck,
+  LogOut,
+  AlertCircle,
+} from 'lucide-react';
+import { useSSE } from '@/hooks/useSSE';
+import { useAhora } from '@/hooks/useAhora';
+import { useApi } from '@/hooks/useApi';
+import { useAviso } from '@/hooks/useAviso';
+import { useEnvio } from '@/hooks/useEnvio';
+import ErrorDeCarga from '@/components/ErrorDeCarga';
+import { formatPesos } from '@/utils/dinero';
+import { enviarJson } from '@/lib/api-cliente';
+import { useDialogo } from '@/hooks/useDialogo';
+import './cocina.css';
+
+interface HistorialPedido {
+  id: number;
+  pedidoId: number;
+  accion: string;
+  detalle: string;
+  motivo: string;
+  createdAt: string;
+}
+
+interface Pedido {
+  id: number;
+  mesaId: number;
+  estado: string;
+  total: number;
+  notas: string;
+  creadoEn: string;
+  actualizadoEn: string;
+  entregadoEn?: string;
+  mesa: { numero: number };
+  historial: HistorialPedido[];
+  items: Array<{
+    id: number;
+    cantidad: number;
+    notas: string;
+    precio: number;
+    productoId: number;
+    producto: { nombre: string; imagen: string; precio: number };
+  }>;
+}
+
+export default function CocinaPage() {
+  const { aviso: nuevoPedido, mostrar: mostrarNuevoPedido } = useAviso<boolean>();
+  const [modalEditId, setModalEditId] = useState<number | null>(null);
+  const [modalHistoryId, setModalHistoryId] = useState<number | null>(null);
+  const [modalEntregadosOpen, setModalEntregadosOpen] = useState(false);
+  const [modalCancelarId, setModalCancelarId] = useState<number | null>(null);
+  const [motivoCambio, setMotivoCambio] = useState('');
+  const [historialTab, setHistorialTab] = useState<'entregados' | 'cancelados'>('entregados');
+  // Errores de la API: aviso flotante para acciones sobre la grilla; el de cancelar va en su modal.
+  const { aviso, mostrar: mostrarAviso, ocultar: ocultarAviso } = useAviso<string>();
+  // Una acción a la vez por pedido: el segundo toque (antes del re-render) se ignora.
+  const { ejecutar, ocupado } = useEnvio();
+  const [errorCancelar, setErrorCancelar] = useState('');
+  // Modales: Escape los cierra, el foco entra al abrirlos y vuelve al cerrarlos.
+  const dlgEditar = useDialogo('Editar comanda', () => setModalEditId(null));
+  const dlgHistorial = useDialogo('Historial del pedido', () => setModalHistoryId(null));
+  const dlgEntregados = useDialogo('Pedidos de hoy', () => setModalEntregadosOpen(false));
+  const dlgCancelar = useDialogo('Cancelar pedido', () => {
+    setModalCancelarId(null);
+    setMotivoCambio('');
+    setErrorCancelar('');
+  });
+  // Hora que avanza sola: refresca "hace X min" y la marca de demorado aunque no lleguen eventos
+  const ahora = useAhora();
+
+  const mostrarError = useCallback((mensaje: string) => mostrarAviso(mensaje, 5000), [mostrarAviso]);
+
+  const { data: pedidos, error: errorPedidos, recargar: fetchPedidos } = useApi<Pedido[]>('/api/pedidos', []);
+  // Los modales guardan solo el id y leen el pedido de la lista actual: así muestran cada cambio
+  // (el "+" suma de verdad la segunda vez) y se cierran solos si el pedido deja de estar activo.
+  const modalEditOpen = pedidos.find((p) => p.id === modalEditId) ?? null;
+  const modalHistoryOpen = pedidos.find((p) => p.id === modalHistoryId) ?? null;
+  const modalCancelarOpen = pedidos.find((p) => p.id === modalCancelarId) ?? null;
+  const { data: productos, error: errorProductos, recargar: fetchProductos } = useApi<Array<{ id: number; nombre: string; precio: number; categoriaId: number }>>('/api/productos', []);
+  // Historial de hoy: solo se pide con su modal abierto (y se vuelve a pedir al reabrirlo)
+  const { data: entregados, error: errorEntregados, recargar: fetchEntregados } = useApi<Pedido[]>(
+    modalEntregadosOpen ? '/api/pedidos/history?days=1' : null,
+    []
+  );
+
+  // SSE for real-time updates
+  useSSE(
+    useCallback(
+      (data: { event: string }) => {
+        if (data.event === 'pedido:nuevo') {
+          mostrarNuevoPedido(true, 3000);
+        }
+        fetchPedidos();
+      },
+      [fetchPedidos, mostrarNuevoPedido]
+    ),
+    // Al volver la conexión: lo que pasó mientras estuvo caída no llegó por SSE.
+    useCallback(() => {
+      fetchPedidos();
+      fetchProductos();
+      fetchEntregados();
+    }, [fetchPedidos, fetchProductos, fetchEntregados])
+  );
+
+  const handleModifyItem = (pedidoId: number, action: string, data: Record<string, unknown>) => ejecutar(async () => {
+    const error = await enviarJson(
+      `/api/pedidos/${pedidoId}/items`,
+      'PATCH',
+      { action, motivo: motivoCambio || 'Modificado desde cocina', ...data },
+      'No se pudo modificar el pedido'
+    );
+    if (error) mostrarError(error);
+    setMotivoCambio('');
+    fetchPedidos();
+  }, pedidoId);
+
+  /** Devuelve true si el servidor aceptó el cambio; si no, muestra su error. */
+  const cambiarEstado = async (pedidoId: number, nuevoEstado: string): Promise<boolean> => {
+    const aceptado = await ejecutar(async () => {
+      const error = await enviarJson('/api/pedidos', 'PATCH', { id: pedidoId, estado: nuevoEstado }, 'No se pudo cambiar el estado del pedido');
+      if (error) mostrarError(error);
+      fetchPedidos();
+      return !error;
+    }, pedidoId);
+    return aceptado ?? false; // undefined = ya había una acción en curso sobre ese pedido
+  };
+
+  const handleCancelarPedido = (pedidoId: number) => ejecutar(async () => {
+    setErrorCancelar('');
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: motivoCambio }),
+      });
+      if (res.ok) {
+        setMotivoCambio('');
+        setModalCancelarId(null);
+        fetchPedidos();
+      } else {
+        const data = await res.json().catch(() => null);
+        setErrorCancelar(data?.error || 'No se pudo cancelar el pedido');
+      }
+    } catch {
+      setErrorCancelar('No se pudo conectar con el servidor');
+    }
+  }, pedidoId);
+
+  const tiempoTranscurrido = (fecha: string) => {
+    const diff = ahora - new Date(fecha).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Ahora';
+    if (mins < 60) return `${mins} min`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  const pedidosPendientes = pedidos.filter((p) => p.estado === 'pendiente');
+  const pedidosPreparando = pedidos.filter((p) => p.estado === 'preparando');
+  const pedidosListos = pedidos.filter((p) => p.estado === 'listo');
+
+  const renderPedido = (pedido: Pedido, esPrimero = false, esSiguiente = false) => {
+    const minutos = Math.floor((ahora - new Date(pedido.creadoEn).getTime()) / 60000);
+    const isDemorado = minutos >= 15 && pedido.estado !== 'listo';
+
+    return (
+      <article key={pedido.id} className={`ns-pedido ${esSiguiente ? 'siguiente' : ''}`}>
+        <header className="ns-pedido-cab">
+          <div>
+            <h3 className="ns-pedido-mesa">Mesa {pedido.mesa.numero}</h3>
+            <div className={`ns-pedido-tiempo ${isDemorado ? 'demorado' : ''}`}>
+              {isDemorado ? `Demorado ${tiempoTranscurrido(pedido.creadoEn)}` : tiempoTranscurrido(pedido.creadoEn)}
+            </div>
+            {esSiguiente && <span className="ns-etiqueta">Sigue en la fila</span>}
+            {pedido.historial && pedido.historial.length > 0 && <span className="ns-etiqueta apagada"> Modificado</span>}
+          </div>
+          <div className="ns-pedido-herramientas">
+            <button aria-label={`Historial del pedido de la mesa ${pedido.mesa.numero}`} onClick={() => setModalHistoryId(pedido.id)} className="ns-btn ns-btn-icono" title="Historial">
+              <History className="w-4 h-4" />
+            </button>
+            <button aria-label={`Editar comanda de la mesa ${pedido.mesa.numero}`} onClick={() => setModalEditId(pedido.id)} className="ns-btn ns-btn-icono" title="Editar comanda">
+              <Edit className="w-4 h-4" />
+            </button>
+            <button aria-label={`Cancelar pedido de la mesa ${pedido.mesa.numero}`} onClick={() => { setModalCancelarId(pedido.id); setMotivoCambio(''); setErrorCancelar(''); }} className="ns-btn ns-btn-icono ns-btn-peligro" title="Cancelar pedido">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        <ul className="ns-items">
+          {pedido.items.map((item) => (
+            <li key={item.id} className="ns-item">
+              <span className="ns-item-cant">{item.cantidad}×</span>
+              <span className="ns-item-nombre">
+                {item.producto.nombre}
+                {item.notas && <span className="ns-item-nota">{item.notas}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {pedido.notas && (
+          <p className="ns-nota-pedido">
+            <b>Nota del pedido:</b> {pedido.notas}
+          </p>
+        )}
+
+        <div className="ns-pedido-acciones">
+          {pedido.estado === 'pendiente' && (
+            <button onClick={() => cambiarEstado(pedido.id, 'preparando')} disabled={ocupado(pedido.id)} className={`ns-btn ns-btn-bloque ${esPrimero ? 'ns-btn-primario' : ''}`}>
+              Iniciar preparación
+            </button>
+          )}
+          {pedido.estado === 'preparando' && (
+            <button onClick={() => cambiarEstado(pedido.id, 'listo')} disabled={ocupado(pedido.id)} className={`ns-btn ns-btn-bloque ${esPrimero ? 'ns-btn-primario' : ''}`}>
+              Marcar como listo
+            </button>
+          )}
+          {pedido.estado === 'listo' && (
+            <button onClick={() => cambiarEstado(pedido.id, 'entregado')} disabled={ocupado(pedido.id)} className="ns-btn ns-btn-bloque">
+              Confirmar entrega
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  };
+
+  const columnas = [
+    { clave: 'pendiente', titulo: 'Pendientes', lista: pedidosPendientes, vacioTitulo: 'No hay pedidos pendientes', vacioTexto: 'Cuando un mozo envíe una comanda, aparece aquí.' },
+    { clave: 'preparando', titulo: 'En preparación', lista: pedidosPreparando, vacioTitulo: 'No hay nada en preparación', vacioTexto: 'Los pedidos que inicies pasan a esta columna.' },
+    { clave: 'listo', titulo: 'Listos para servir', lista: pedidosListos, vacioTitulo: 'No hay pedidos listos', vacioTexto: 'Al marcar un pedido como listo, queda aquí hasta entregarlo.' },
+  ];
+
+  return (
+    <div className="ns">
+      {nuevoPedido && (
+        <div role="status" className="ns-toast ns-toast-nuevo">
+          <Bell className="w-5 h-5" />
+          Llegó un pedido nuevo
+        </div>
+      )}
+
+      {/* Error de la API (debajo del aviso de nuevo pedido para que no se tapen) */}
+      {aviso && (
+        <div role="alert" className="ns-toast ns-toast-error">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span className="flex-1">{aviso}</span>
+          <button onClick={ocultarAviso} aria-label="Cerrar aviso">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="ns-cabecera">
+        <button
+          aria-label="Bloquear terminal"
+          onClick={async () => {
+            // Aunque el servidor no responda, se vuelve al inicio (la cookie vence sola).
+            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.href = '/';
+          }}
+          className="ns-btn ns-btn-icono"
+          title="Bloquear terminal"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
+        <div>
+          <h1>Cocina</h1>
+          <p>{errorPedidos && pedidos.length === 0 ? 'Sin datos del servidor' : `${pedidos.length} pedidos activos`}</p>
+        </div>
+        <button onClick={() => setModalEntregadosOpen(true)} className="ns-btn ns-der">
+          <CheckCheck className="w-4 h-4" />
+          Entregados de hoy
+        </button>
+      </div>
+
+      <ErrorDeCarga error={errorPedidos} que="los pedidos" onReintentar={fetchPedidos} />
+      <ErrorDeCarga error={errorProductos} que="los productos (para agregar platos)" onReintentar={fetchProductos} />
+
+      <div className="ns-tablero">
+        {columnas.map((col) => (
+          <section key={col.clave} aria-labelledby={`col-${col.clave}`}>
+            <div className="ns-columna-titulo">
+              <h2 id={`col-${col.clave}`}>{col.titulo}</h2>
+              <span>{col.lista.length}</span>
+            </div>
+            <div className="ns-lista">
+              {col.lista.map((p, i) => renderPedido(p, i === 0, col.clave === 'pendiente' && i === 0))}
+              {col.lista.length === 0 && !errorPedidos && (
+                <div className="ns-vacio">
+                  <b>{col.vacioTitulo}</b>
+                  {col.vacioTexto}
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {/* Edit Modal */}
+      {modalEditOpen && (
+        <div {...dlgEditar} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--card)] w-full max-w-2xl rounded-2xl border border-[var(--border)] shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Edit className="w-5 h-5 text-[var(--primary)]" />
+                  Editar Comanda - Mesa {modalEditOpen.mesa.numero}
+                </h2>
+                <p className="text-sm text-[var(--muted)]">Modifica los platos de la orden activa.</p>
+              </div>
+              <button aria-label="Cerrar" onClick={() => setModalEditId(null)} className="p-2 hover:bg-[var(--card-hover)] rounded-lg transition-colors min-w-11 min-h-11">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 space-y-6">
+              {/* Items Actuales */}
+              <div>
+                <h3 className="font-bold mb-3">Ítems Actuales</h3>
+                <div className="space-y-3">
+                  {modalEditOpen.items.map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-[var(--background)] rounded-xl border border-[var(--border)]">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold truncate">{item.producto.nombre}</div>
+                        <div className="text-xs text-[var(--muted)]">{item.notas || 'Sin notas'}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button aria-label={`Quitar uno de ${item.producto.nombre}`} disabled={ocupado(modalEditOpen.id)} onClick={() => handleModifyItem(modalEditOpen.id, 'UPDATE_QUANTITY', { itemId: item.id, cantidad: Math.max(1, item.cantidad - 1) })} className="p-1.5 bg-[var(--card)] rounded-md hover:bg-red-500/20 text-red-400 min-w-11 min-h-11">
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="font-bold w-6 text-center">{item.cantidad}</span>
+                        <button aria-label={`Agregar uno de ${item.producto.nombre}`} disabled={ocupado(modalEditOpen.id)} onClick={() => handleModifyItem(modalEditOpen.id, 'UPDATE_QUANTITY', { itemId: item.id, cantidad: item.cantidad + 1 })} className="p-1.5 bg-[var(--card)] rounded-md hover:bg-green-500/20 text-green-400 min-w-11 min-h-11">
+                          <Plus className="w-4 h-4" />
+                        </button>
+                        <div className="w-[1px] h-6 bg-[var(--border)] mx-1"></div>
+                        <button aria-label={`Eliminar ${item.producto.nombre}`} disabled={ocupado(modalEditOpen.id)} onClick={() => { if(confirm('¿Eliminar este plato?')) handleModifyItem(modalEditOpen.id, 'REMOVE_ITEM', { itemId: item.id }) }} className="p-1.5 bg-[var(--card)] rounded-md hover:bg-red-500/20 text-red-500 min-w-11 min-h-11">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Agregar Nuevo */}
+              <div>
+                <h3 className="font-bold mb-3">Agregar Plato</h3>
+                <div className="flex gap-2">
+                  <select id="new-item-select" className="flex-1 input bg-[var(--background)] border border-[var(--border)] rounded-xl p-3">
+                    <option value="">Seleccionar producto...</option>
+                    {productos.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre} - {formatPesos(p.precio)}</option>
+                    ))}
+                  </select>
+                  <button onClick={() => {
+                    const sel = document.getElementById('new-item-select') as HTMLSelectElement;
+                    if(sel.value) {
+                      handleModifyItem(modalEditOpen.id, 'ADD_ITEM', { productoId: parseInt(sel.value, 10), cantidad: 1 });
+                      sel.value = '';
+                    }
+                  }} disabled={ocupado(modalEditOpen.id)} className="btn btn-primary px-6 rounded-xl">
+                    Añadir
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-[var(--border)] bg-[var(--background)] rounded-b-2xl">
+              <input type="text" placeholder="Motivo del cambio (opcional)" value={motivoCambio} onChange={(e) => setMotivoCambio(e.target.value)} className="input w-full p-3 bg-[var(--card)] border border-[var(--border)] rounded-xl" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {modalHistoryOpen && (
+        <div {...dlgHistorial} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--card)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <History className="w-5 h-5 text-purple-400" />
+                Historial Mesa {modalHistoryOpen.mesa.numero}
+              </h2>
+              <button aria-label="Cerrar" onClick={() => setModalHistoryId(null)} className="p-2 hover:bg-[var(--card-hover)] rounded-lg transition-colors min-w-11 min-h-11">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              {modalHistoryOpen.historial && modalHistoryOpen.historial.length > 0 ? (
+                modalHistoryOpen.historial.map((log) => (
+                  <div key={log.id} className="p-3 border-l-2 border-purple-500 bg-[var(--background)] rounded-r-xl">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-bold text-sm text-purple-400">{log.accion}</span>
+                      <span className="text-xs text-[var(--muted)]">{formatDate(log.createdAt, true)}</span>
+                    </div>
+                    <p className="text-sm font-semibold">{log.detalle}</p>
+                    {log.motivo && <p className="text-xs text-[var(--muted)] mt-1 italic">Motivo: {log.motivo}</p>}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center p-6 text-[var(--muted)]">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>Sin modificaciones registradas</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Entregados Modal */}
+      {modalEntregadosOpen && (
+        <div {...dlgEntregados} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-[var(--background)] w-full max-w-6xl h-[90vh] rounded-3xl border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-6 bg-[var(--card)] border-b border-[var(--border)] flex items-center justify-between shrink-0 flex-wrap gap-4">
+              <h2 className="text-2xl font-bold flex items-center gap-3 text-[var(--foreground)]">
+                <History className="w-8 h-8 text-blue-500" />
+                Historial de Pedidos
+              </h2>
+              <div className="flex items-center gap-4">
+                <div className="flex bg-[var(--background)] p-1 rounded-xl border border-[var(--border)]">
+                  <button
+                    onClick={() => setHistorialTab('entregados')}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${historialTab === 'entregados' ? 'bg-green-500 text-white shadow-md' : 'text-[var(--muted)] hover:text-[var(--foreground)]'}`}
+                  >
+                    Entregados
+                  </button>
+                  <button
+                    onClick={() => setHistorialTab('cancelados')}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${historialTab === 'cancelados' ? 'bg-red-500 text-white shadow-md' : 'text-[var(--muted)] hover:text-[var(--foreground)]'}`}
+                  >
+                    Cancelados
+                  </button>
+                </div>
+                <button aria-label="Cerrar" onClick={() => setModalEntregadosOpen(false)} className="p-3 hover:bg-[var(--card-hover)] rounded-xl transition-colors border border-[var(--border)] min-w-11 min-h-11">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {entregados.filter(p => historialTab === 'entregados' ? ['entregado', 'pagado'].includes(p.estado) : p.estado === 'cancelado').length > 0 ? (
+                entregados
+                  .filter(p => historialTab === 'entregados' ? ['entregado', 'pagado'].includes(p.estado) : p.estado === 'cancelado')
+                  .map((pedido) => {
+                  const end = pedido.entregadoEn ? new Date(pedido.entregadoEn).getTime() : ahora;
+                  const start = new Date(pedido.creadoEn).getTime();
+                  const durationMins = Math.floor((end - start) / 60000);
+                  const isFast = durationMins <= 15;
+                  
+                  return (
+                    <div key={pedido.id} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 flex flex-col gap-4 shadow-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-neutral-800 rounded-xl flex items-center justify-center text-xl font-black text-white">
+                            {pedido.mesa.numero}
+                          </div>
+                          <div>
+                            <div className="font-bold">Mesa {pedido.mesa.numero}</div>
+                            <div className="text-xs text-[var(--muted)] flex items-center gap-1 mt-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDate(pedido.creadoEn)}
+                              {' - '}
+                              {pedido.estado === 'cancelado' 
+                                ? `Cancelado ${formatDate(pedido.actualizadoEn)}`
+                                : (pedido.entregadoEn ? formatDate(pedido.entregadoEn) : '...')}
+                            </div>
+                          </div>
+                        </div>
+                        {pedido.estado !== 'cancelado' && (
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-widest ${isFast ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {durationMins} min
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="bg-[var(--background)] rounded-xl p-3 flex-1 overflow-y-auto space-y-2 border border-[var(--border)]/50">
+                        {pedido.items.map(item => (
+                          <div key={item.id} className="flex justify-between items-center text-sm">
+                            <span className="font-bold text-[var(--muted)]">{item.cantidad}x <span className="text-[var(--foreground)]">{item.producto.nombre}</span></span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center mt-2">
+                        <span className={`badge px-3 py-1 text-[10px] font-black uppercase ${pedido.estado === 'pagado' ? 'bg-blue-500/20 text-blue-400' : pedido.estado === 'cancelado' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                          {pedido.estado}
+                        </span>
+                        {/* Un pedido pagado no se reabre (para corregir un cobro se anula la venta en Caja) */}
+                        {pedido.estado === 'entregado' && (
+                          <button 
+                            onClick={async () => {
+                              if (confirm('¿Estás seguro de reactivar este pedido y enviarlo a Preparando?')) {
+                                await cambiarEstado(pedido.id, 'preparando');
+                                fetchEntregados();
+                              }
+                            }}
+                            className="text-xs font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                          >
+                            <History className="w-3 h-3" />
+                            Reactivar
+                          </button>
+                        )}
+                      </div>
+                      
+                      {pedido.estado === 'cancelado' && (
+                        <div className="mt-2 bg-red-500/10 border border-red-500/20 p-2 rounded-lg text-xs text-red-400 font-bold">
+                          Motivo: {pedido.historial.find(h => h.accion === 'PEDIDO_CANCELADO')?.motivo || 'Cancelado sin motivo especificado'}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              ) : errorEntregados ? (
+                <div className="col-span-full">
+                  <ErrorDeCarga error={errorEntregados} que="el historial" onReintentar={fetchEntregados} />
+                </div>
+              ) : (
+                <div className="col-span-full flex flex-col items-center justify-center text-[var(--muted)] p-12">
+                  <CheckCheck className="w-16 h-16 opacity-20 mb-4" />
+                  <p className="text-xl font-bold">No hay pedidos {historialTab === 'entregados' ? 'entregados' : 'cancelados'} recientemente</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Order Modal */}
+      {modalCancelarOpen && (
+        <div {...dlgCancelar} className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-[var(--card)] w-full max-w-md rounded-2xl border border-red-500/30 overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-red-500/10">
+              <h3 className="font-black text-xl text-red-500 flex items-center gap-2">
+                <Trash2 className="w-6 h-6" />
+                Cancelar Pedido Mesa {modalCancelarOpen.mesa.numero}
+              </h3>
+              <button aria-label="Cerrar" onClick={() => { setModalCancelarId(null); setMotivoCambio(''); setErrorCancelar(''); }} className="p-2 bg-[var(--background)] rounded-lg hover:bg-[var(--card-hover)] text-[var(--muted)] hover:text-[var(--foreground)] min-w-11 min-h-11">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-lg font-bold mb-4 text-[var(--foreground)] text-center">
+                ¿Deseas cancelar y eliminar definitivamente este pedido de la Mesa {modalCancelarOpen.mesa.numero}?
+              </p>
+              <div className="bg-red-500/10 p-4 rounded-xl border border-red-500/20 mb-6">
+                <p className="text-sm text-red-400 font-bold mb-2">Esto realizará lo siguiente:</p>
+                <ul className="list-disc list-inside text-sm text-red-300/80 space-y-1">
+                  <li>Marcará el pedido como Cancelado</li>
+                  <li>Liberará la mesa en el plano del salón</li>
+                  <li>Registrará el evento en el historial de auditoría</li>
+                </ul>
+              </div>
+              <input 
+                type="text" 
+                placeholder="Motivo de cancelación (opcional)" 
+                value={motivoCambio} 
+                onChange={(e) => setMotivoCambio(e.target.value)} 
+                className="w-full h-11 bg-[var(--background)] border border-[var(--border)] rounded-xl text-[var(--foreground)] text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all px-4 mb-6" 
+              />
+              {errorCancelar && (
+                <p role="alert" className="text-sm text-red-400 font-bold mb-4 text-center">{errorCancelar}</p>
+              )}
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => { setModalCancelarId(null); setMotivoCambio(''); setErrorCancelar(''); }} 
+                  className="flex-1 btn bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] py-3 font-bold hover:bg-[var(--card-hover)]"
+                >
+                  Conservar
+                </button>
+                <button 
+                  onClick={() => handleCancelarPedido(modalCancelarOpen.id)} 
+                  disabled={ocupado(modalCancelarOpen.id)}
+                  className="flex-1 btn bg-red-500 text-white py-3 font-black shadow-lg hover:bg-red-600 active:scale-95 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  {ocupado(modalCancelarOpen.id) ? 'CANCELANDO...' : 'SÍ, CANCELAR'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

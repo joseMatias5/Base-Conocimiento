@@ -1,0 +1,94 @@
+/* Prueba del sistema «Naranja señal» (D:\BaseConocimiento\09-diseno-visual\) aplicada solo a Cocina.
+   Todo cuelga de .ns: no cambia las demás pantallas. Cocina siempre en oscuro (se usa en un local con poca luz).
+   Se importa la tipografía desde Google Fonts solo para la prueba: en producción autoalojarla (el POS puede estar sin red). */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;700&display=swap");
+
+.ns {
+  --papel: #1a1d23;
+  --fondo: #101216;
+  --linea: #2a2e36;
+  --linea-fuerte: #3a3f49;
+  --apagado: #a3a9b3;
+  --tinta: #e6e8eb;
+  --acento: #ff7a2f;
+  --acento-texto: #ff8f4f;
+  --acento-suave: #3a2212;
+  --acento-tinta: #ffc9a3;
+  --aviso: #e0a526;
+  --error: #ff6b5e;
+  --radio: 4px;
+
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+  padding: 24px;
+}
+.ns :focus-visible { outline: 2px solid var(--acento-texto); outline-offset: 2px; }
+
+/* Encabezado */
+.ns-cabecera { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+.ns-cabecera h1 { font-size: 2rem; font-weight: 300; line-height: 1.1; margin: 0; letter-spacing: -0.01em; }
+.ns-cabecera p { margin: 4px 0 0; color: var(--apagado); font-size: 0.875rem; }
+.ns-cabecera .ns-der { margin-left: auto; }
+
+/* Botones */
+.ns-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px; border-radius: var(--radio);
+  font: 500 0.875rem/1 "IBM Plex Sans", system-ui, sans-serif;
+  border: 1px solid var(--linea-fuerte); background: var(--papel); color: var(--tinta); cursor: pointer;
+}
+.ns-btn:hover:not(:disabled) { border-color: var(--tinta); }
+.ns-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.ns-btn-primario { background: var(--acento); border-color: var(--acento); color: #16181d; }
+.ns-btn-primario:hover:not(:disabled) { border-color: var(--acento-tinta); background: #ff8f4f; }
+.ns-btn-icono { min-width: 44px; padding: 0; color: var(--apagado); }
+.ns-btn-icono:hover:not(:disabled) { color: var(--tinta); }
+.ns-btn-peligro:hover:not(:disabled) { color: var(--error); border-color: var(--error); }
+.ns-btn-bloque { width: 100%; min-height: 48px; }
+
+/* Columnas */
+.ns-tablero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
+@media (max-width: 767px) { .ns-tablero { grid-template-columns: 1fr; } }
+.ns-columna-titulo {
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px solid var(--linea-fuerte); padding-bottom: 8px; margin: 0 0 16px;
+}
+.ns-columna-titulo h2 { font-size: 1.125rem; font-weight: 500; margin: 0; }
+.ns-columna-titulo span { font-size: 1.5rem; font-weight: 300; color: var(--apagado); }
+.ns-lista { display: grid; gap: 16px; }
+.ns-vacio { border: 1px dashed var(--linea-fuerte); border-radius: var(--radio); padding: 24px; color: var(--apagado); font-size: 0.875rem; }
+.ns-vacio b { display: block; color: var(--tinta); font-weight: 500; margin-bottom: 4px; }
+
+/* Tarjeta de pedido: sin sombras; la barra naranja marca el pedido que sigue en la fila */
+.ns-pedido { background: var(--papel); border: 1px solid var(--linea); border-radius: var(--radio); }
+.ns-pedido.siguiente { border-left: 4px solid var(--acento); }
+.ns-pedido-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 16px 16px 8px; }
+.ns-pedido-mesa { font-size: 1.5rem; font-weight: 500; line-height: 1.1; margin: 0; }
+.ns-pedido-tiempo { font-size: 0.875rem; color: var(--apagado); margin-top: 4px; }
+.ns-pedido-tiempo.demorado { color: var(--error); font-weight: 500; }
+.ns-pedido-herramientas { display: flex; gap: 4px; }
+.ns-etiqueta { display: inline-block; margin-top: 8px; font-size: 0.8125rem; color: var(--acento-texto); }
+
+.ns-items { list-style: none; margin: 0; padding: 0 16px; }
+.ns-item { display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 8px 0; border-top: 1px solid var(--linea); }
+.ns-item:first-child { border-top: 0; }
+.ns-item-cant { font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+.ns-item-nombre { font-size: 1rem; line-height: 1.3; padding-top: 3px; }
+.ns-item-nota { display: block; margin-top: 4px; font-size: 0.875rem; color: var(--aviso); }
+.ns-nota-pedido { margin: 8px 16px 0; padding: 8px 12px; background: var(--acento-suave); color: var(--acento-tinta); border-radius: var(--radio); font-size: 0.875rem; }
+.ns-nota-pedido b { font-weight: 500; }
+.ns-pedido-acciones { padding: 16px; }
+
+/* Avisos */
+.ns-toast {
+  position: fixed; top: 16px; right: 16px; z-index: 50; max-width: 24rem;
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radio);
+  font-size: 0.875rem; font-weight: 500;
+}
+.ns-toast-nuevo { background: var(--acento); color: #16181d; }
+.ns-toast-error { top: 72px; background: var(--papel); color: var(--error); border: 1px solid var(--error); }
+.ns-toast button { background: none; border: 0; color: inherit; cursor: pointer; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.ns-etiqueta.apagada { color: var(--apagado); }
