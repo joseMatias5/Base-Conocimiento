@@ -1,0 +1,3 @@
+*.pdf binary
+*.html binary
+*.json -text
