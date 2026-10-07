@@ -11,7 +11,7 @@ Claude lee esta carpeta (el `CLAUDE.md` global lo ordena al iniciar un proyecto)
 
 | Carpeta / archivo | Contenido | Cuándo leerlo |
 |---|---|---|
-| `01-fundamentos/LECCIONES-APRENDIDAS.md` | 34 errores reales → reglas (L-001…L-059) | **Siempre**, antes de escribir código |
+| `01-fundamentos/LECCIONES-APRENDIDAS.md` | 53 lecciones: errores reales → reglas (L-001…L-078; numeración y verificador en su encabezado) | **Siempre**, antes de escribir código |
 | `01-fundamentos/HERRAMIENTAS-Y-PLUGINS.md` | Plugins y skills instalados (graphify, feature-dev, code-review, security-review, engineering:*, playwright, LSP, token-usage…) y cuándo usar cada uno por fase | Al iniciar un proyecto y antes de revisar o entregar |
 | `01-fundamentos/GUIA-APP-ROBUSTA.md` | Procedimiento en 7 fases con criterio de terminado | Al iniciar un proyecto y al cerrar cada fase |
 | `02-arquitectura/CLAUDE-arquitectura-base.md` | Clean/Hexagonal, SOLID, GRASP, GoF, responsive, antipatrones. Es `CLAUDE_1.md` de Descargas, sin modificar (idéntico al `CLAUDE.md` descargado salvo que su §7 apunta a TESTING.md) | Al diseñar módulos y UI |
@@ -27,6 +27,7 @@ Claude lee esta carpeta (el `CLAUDE.md` global lo ordena al iniciar un proyecto)
 | `06-pruebas/02-pruebas-del-proyecto-y-brechas.md` | Contraste de la norma con los 799 tests del proyecto, tensiones resueltas, recetas de pruebas de datos, plan de mejora | Al decidir qué probar y cómo |
 | `08-laboratorios/` | Laboratorios que validan con código real lo que estaba solo investigado (PostgreSQL y concurrencia, C#, respaldos y pipeline local, frontend e2e y seguridad básica; 58 tests) | Para saber qué recetas están ya probadas |
 | `09-diseno-visual/` | Cómo evitar UI genérica con Claude Code, sistema de marca personal «Naranja señal» (`tokens.css`, `muestra.html`, plantilla de `CLAUDE.md` de diseño) | Antes de crear o cambiar cualquier pantalla |
+| `herramientas/verificar-lecciones.py` | Siguiente número libre de lección y detección de repetidos y referencias rotas | Antes y después de agregar una lección |
 | `07-grafos/` | Informes y grafos de graphify (proyecto: 876 nodos; lecciones: 49 nodos), foto del 2026-10-06 | Para navegar el proyecto/lecciones por relaciones |
 
 ## Orden de lectura sugerido para un proyecto nuevo
@@ -46,6 +47,7 @@ idempotencia por clave, multi-tenant, concurrencia optimista con versión de fil
 validarse con un test contra el motor real la primera vez que se usen, y la lección resultante se agrega aquí.
 
 **Brechas conocidas:**
+- Diseño visual: «Naranja señal» validado solo en la muestra y en la pantalla Cocina (rama local sin integrar); faltan logotipo, paleta de gráficos y probarlo en más pantallas.
 - Lecciones de frontend, accesibilidad y pruebas de punta a punta (Playwright): casi inexistentes. El proyecto de
   referencia ya mide cobertura (95 %), tiene e2e en escritorio y móvil, axe, propiedades, mutación (84 %) y un CI escrito; **el CI aún no se ejecutó en GitHub** y el e2e no recorre las pantallas de Comandas/Cocina/Caja con clics (detalle en `06-pruebas/02`).
 - Despliegue en la nube, contenedores, CI/CD, monitoreo en producción.
@@ -53,6 +55,8 @@ validarse con un test contra el motor real la primera vez que se usen, y la lecc
 - Una sola fuente de lecciones (un proyecto, un stack): puede haber sesgo hacia Next.js + Prisma + SQLite.
 
 ## Mantenimiento
+
+- **Varias sesiones escriben en esta base.** Antes de agregar una lección: `python -I herramientas/verificar-lecciones.py` (da el siguiente número libre y detecta repetidos o referencias rotas); después de agregarla, otra vez. Las reglas de numeración están en el encabezado de `LECCIONES-APRENDIDAS.md`. Antes de editar un archivo compartido (README, CHANGELOG, LECCIONES), leerlo de nuevo: puede haber cambiado en disco.
 
 - Al cerrar cada bloque de trabajo: toda corrección "a mano" → lección en `01-fundamentos/LECCIONES-APRENDIDAS.md`
   (formato Error → Regla → Cómo verificarlo → Origen) y la concreta en el `docs/lecciones-aprendidas.md` del proyecto.

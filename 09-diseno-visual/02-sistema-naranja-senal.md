@@ -45,6 +45,19 @@ Regla: **nunca texto blanco sobre `--acento`**; si se necesita blanco, usar `--a
 4. Pedir pantallas con el prompt de `01-diseno-sin-aspecto-generico.md` §5 y verificar con §4 y §6.
 5. Con shadcn/ui: mapear sus variables a estos tokens y no dejar el tema por defecto.
 
+## Prueba real: pantalla Cocina del restaurante (2026-10-07)
+
+Rama local `prueba/naranja-senal-cocina` en `D:\Proyecto\Clonado del repo\restaurante-san-andres` (sin commit ni push):
+`src/app/cocina/page.tsx` (tablero y tarjetas; los modales no se tocaron) + `src/app/cocina/cocina.css` (todo bajo `.ns`, no afecta otras pantallas).
+Captura: `capturas/cocina-escritorio.png`.
+
+- **Antes:** Inter, tarjetas con radio 14, sombras y brillo, emojis, tres colores de estado (ámbar/azul/verde) y botones de colores distintos, animaciones de entrada, pulso y sacudida.
+- **Después:** una familia tipográfica, bordes de 1 px, sin sombras ni animaciones, el estado lo da la **columna** (no el color), texto de botón en oraciones ("Iniciar preparación").
+- **Uso del naranja como señal:** barra de 4 px en el pedido que *sigue en la fila*, y botón naranja solo en el **primer** pedido de cada columna (los demás, contorno). La primera versión pintó los 7 botones de naranja y la señal se diluyó; se corrigió mirando la captura (L-077).
+- **Verificación:** `tsc` y `eslint` limpios, 873 tests rápidos verdes, axe en Cocina (escritorio y móvil) con cero violaciones, build correcto.
+- **No verificado:** pedidos demorados (≥15 min: no se pudo retrasar la hora en la prueba), los cuatro modales con el estilo nuevo, la tipografía sin red (el POS puede estar offline: autoalojar IBM Plex).
+- **Ojo de equipo:** el frontend es de Agus según el `CLAUDE.md` del proyecto; esto es una propuesta para revisar con ellos antes de integrarla.
+
 ## Cómo evoluciona (perfeccionarlo)
 
 Es un **punto de partida v1**, no un sello cerrado. Cada proyecto debe devolver aquí lo aprendido:

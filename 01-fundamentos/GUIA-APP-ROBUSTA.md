@@ -68,6 +68,7 @@ Por cada funcionalidad:
 - Lint y chequeo de tipos sin errores en TODO el repositorio (incluidos scripts y carpetas de escritorio).
 - Revisión de seguridad (`/security-review`) y de código (`/code-review`) sobre la rama.
 - Accesibilidad básica: tamaños táctiles de 44 px, `aria-label`, foco en modales, contraste.
+- Diseño visual: usar los tokens y reglas de `09-diseno-visual/` (sin aspecto genérico), con captura en escritorio y móvil, claro y oscuro, y contraste medido (L-075, L-077).
 - Imprimir o renderizar HTML con datos de usuario: siempre escapado (XSS).
 - Un único formateador de moneda y fechas con la configuración regional.
 

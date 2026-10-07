@@ -1,12 +1,17 @@
 # Changelog de la base de conocimiento
 
+## 2026-10-07 (orden de lecciones) — Numeración sin repetidos
+- Choque de numeración entre sesiones (L-069 a L-071 usados dos veces; L-054 con "refuerzos" como entradas aparte): las de diseño visual pasaron a L-075 a L-077 (ya citadas así en los documentos), los dos refuerzos de L-054 se plegaron dentro de L-054 como "Se repitió" y de L-069 en adelante las lecciones quedaron en orden numérico.
+- Nuevo `herramientas/verificar-lecciones.py`: siguiente número libre, repetidos y referencias `L-nnn` rotas (hoy: 53 lecciones, L-001 a L-078, sin problemas). Regla de numeración en el encabezado de `LECCIONES-APRENDIDAS.md` y en el README.
+
 ## 2026-10-07 (diseño visual) — Nueva carpeta `09-diseno-visual/`
 - Investigación de los artículos de Superdesign y del skill `frontend-design` instalado → `01-diseno-sin-aspecto-generico.md`
   (causas, herramientas, reglas, bucle de captura, prompt modelo, lista de verificación).
 - Sistema de marca personal «Naranja señal» (sobrio y técnico, acento naranja sobre blanco/gris, para apps de gestión):
   `02-sistema-naranja-senal.md`, `tokens.css`, `muestra.html` (verificada en claro/oscuro, escritorio/móvil con Edge headless),
   `CLAUDE-diseno.md.plantilla` para pegar en cada proyecto.
-- Lecciones L-069 (contraste del color de marca) y L-070 (captura móvil headless). Playwright falló (falta Chrome): ver `HERRAMIENTAS-Y-PLUGINS.md`.
+- Lecciones L-075 (contraste del color de marca) y L-076 (captura móvil headless). Playwright falló (falta Chrome): ver `HERRAMIENTAS-Y-PLUGINS.md`.
+- Prueba real en la pantalla Cocina del restaurante (rama local `prueba/naranja-senal-cocina`, sin commit): documentada en `02-sistema-naranja-senal.md`; lección L-077 (renumeradas: L-069 a L-071 ya las usaba otra sesión).
 - Superdesign no se instaló (opcional, de pago); el sistema está validado solo en la muestra, aún no en un proyecto real.
 
 ## 2026-10-07 (laboratorios) — Plugins documentados y Lab 1

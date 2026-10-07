@@ -6,6 +6,12 @@ Se leen ANTES de desarrollar y se actualizan AL TERMINAR cada bloque de trabajo 
 Formato de cada lección: **Error** (qué pasó) → **Regla** (qué hacer siempre) → **Cómo verificarlo**.
 Origen: proyecto y referencia, para poder ver el caso concreto.
 
+**Numeración (varias sesiones escriben aquí; leer antes de agregar):**
+1. El número nuevo es el **siguiente libre**: ejecutar `python -I D:\BaseConocimiento\herramientas\verificar-lecciones.py` justo antes de escribir (muestra el siguiente número y falla si hay repetidos o referencias rotas). Volver a ejecutarlo después de escribir.
+2. Una lección que **se repite** no recibe número nuevo: se agrega un punto `- **Se repitió (origen, fecha):** …` dentro de la lección original (ejemplo: L-054).
+3. Los números **no se reutilizan ni se renumeran** una vez publicados (otros documentos los citan). Si hubo un choque, el que llegó segundo se renumera y se corrigen sus referencias (hecho el 2026-10-07: L-075 a L-077 eran L-069 a L-071 en la sesión de diseño visual).
+4. Las lecciones de L-069 en adelante van en orden cronológico al final del archivo; las anteriores están agrupadas por tema (A–F).
+
 ---
 
 ## A. Dinero y cálculos de negocio
@@ -171,6 +177,8 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
   dentro de una cadena de Python (no cruda) se convirtió en un carácter de control dentro de un archivo. **Regla reforzada:** todo archivo con
   barras invertidas, comillas o regex se crea con la herramienta de escritura de archivos (no `cat <<EOF` ni `sed`); en Python, cadenas crudas
   (`r'...'`) y, para rutas, `replaceAll('\\', '/')` (dos barras en el código fuente) o `pathlib` en vez de regex con barras. Leer el archivo resultante antes de ejecutarlo.
+- **Se repitió (Lab 1, 2026-10-07):** - Con `cat <<'EOF'` de varios cientos de líneas el shell devolvió `unexpected EOF`. Se resolvió escribiendo los archivos con la herramienta Write. La regla de L-054 se cumple: **archivos de código siempre con Write**.
+- **Se repitió (Lab 2, 2026-10-07):** - Un script de Python que editaba un `.cs` insertó un salto de línea dentro de una cadena de C# (error CS1039); otro script falló por comillas triples dentro del texto. Regla de L-054: editar código y documentos con Edit/Write, no con scripts que reescriben texto con barras invertidas o comillas.
 - Origen: restaurante-san-andres, sesiones del 2026-10-06 y 2026-10-07.
 
 ### L-055 · Decisiones de diseño que son del usuario
@@ -211,9 +219,6 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
   En Windows, `stop()` puede lanzar `EBUSY` al borrar la carpeta temporal aunque el servidor ya se detuvo: capturar solo ese código y comprobar con `tasklist` que no quedan procesos huérfanos.
 - Origen: Lab 1 (2026-10-07); en este equipo no hay Docker ni PostgreSQL instalados.
 
-### L-054 (refuerzo) · Dos heredocs largos fallaron otra vez en la sesión del Lab 1
-- Con `cat <<'EOF'` de varios cientos de líneas el shell devolvió `unexpected EOF`. Se resolvió escribiendo los archivos con la herramienta Write. La regla de L-054 se cumple: **archivos de código siempre con Write**.
-
 ### L-063 · Los ejemplos numéricos de la documentación también se prueban
 - **Error:** el ejemplo "3 × $1.250,50 con 10 % de descuento = $3.375,35" del prompt inicial estaba mal (correcto: **$3.376,35**). Lo detectó un test unitario del Lab 2 al convertir el ejemplo en aserción.
 - **Regla:** todo ejemplo numérico que aparezca en una guía o prompt debe existir como test en algún proyecto de referencia; la aritmética de documentación no se confía a la memoria.
@@ -229,9 +234,6 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
 - **Regla:** en ASP.NET Core con hosting mínimo, `builder.Configuration` se lee antes de que `WithWebHostBuilder` aplique cambios; en los tests de API fijar la configuración con **variables de entorno** (`ConnectionStrings__Base`) antes de crear la fábrica, o inyectarla por servicios.
 - Origen: Lab 2 (2026-10-07).
 
-### L-054 (segundo refuerzo) · Un script de Python con cadena no cruda convierte `\n` en salto real
-- Un script de Python que editaba un `.cs` insertó un salto de línea dentro de una cadena de C# (error CS1039); otro script falló por comillas triples dentro del texto. Regla de L-054: editar código y documentos con Edit/Write, no con scripts que reescriben texto con barras invertidas o comillas.
-
 ### L-066 · Aserciones sobre códigos de error, no sobre mensajes
 - **Error:** un test esperaba el texto `foreign key` y falló porque el servidor responde en el idioma del equipo ("viola la llave foránea").
 - **Regla:** comprobar el SQLSTATE (`23503` clave foránea, `23505` único, `23514` check, `40001` serialización, `40P01` deadlock) o el código del error de la aplicación, nunca el texto del mensaje.
@@ -246,17 +248,6 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
 ### L-068 · Un pipeline no ejecutado es una hipótesis
 - **Regla:** el YAML del CI puede estar perfecto y no haberse ejecutado nunca. Mantener un script local equivalente (`npm run ci`) que se ejecuta de verdad y declarar explícitamente en el README qué piezas están "escritas pero no ejecutadas" (workflow, Dockerfile). Un pipeline falla rápido y marca como "no ejecutada" cada compuerta posterior.
 - Origen: Lab 3 (2026-10-07).
-
-### L-069 · El color de marca se mide, no se elige a ojo: texto blanco sobre naranja no pasa AA
-- **Error:** el primer instinto fue botón naranja `#E8590C` con texto blanco; medido da 3,6:1 (AA exige 4,5:1 en texto pequeño).
-- **Regla:** al definir tokens, calcular el contraste de cada par texto/fondo y escribir en el propio CSS cuál se usa (texto sobre acento = tinta oscura, 5,0:1; acento como texto sobre claro = versión oscurecida `#C2410C`, 5,2:1). Un acento necesita dos variantes: relleno y texto.
-- **Cómo verificarlo:** script de razón de contraste WCAG sobre los tokens, más axe en el e2e (ver L-059).
-- Origen: sistema «Naranja señal», `09-diseno-visual/` (2026-10-07).
-
-### L-070 · Una captura de móvil con Edge headless a menos de ~500 px recorta, no reacomoda
-- **Error:** con `--window-size=390` la página parecía desbordar (tarjetas cortadas); el ancho real de maquetación era ~500 px y la captura solo recortaba. Además el plugin `playwright` no arrancó porque busca Chrome en una ruta que no existe.
-- **Regla:** antes de "arreglar" un desborde visto en captura, confirmar el ancho real de la ventana; probar el móvil a 500 px o con emulación de dispositivo. Si Playwright no tiene Chrome, usar Edge headless (`msedge --headless=new --screenshot=…`) o `npx playwright install chrome`.
-- Origen: `09-diseno-visual/` (2026-10-07).
 
 ### L-069 · Recargar datos no debe borrar el error de la acción anterior
 - **Error:** la pantalla mostraba el error de red y, un instante después, la recarga de la lista exitosa lo ocultaba: el usuario nunca lo veía. Lo detectó el e2e "si la API falla…", no la revisión manual.
@@ -282,3 +273,38 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
 ### L-073 · Verificar lo verificable de lo que no se puede ejecutar
 - **Regla:** cuando un artefacto (workflow de CI, Dockerfile) no se puede ejecutar en el entorno, verificar al menos sus partes aisladas: sintaxis del YAML con un parser real y los comandos de cada etapa (p. ej. `dotnet publish -c Release`) en local. Declarar el resto como "pendiente externo" y revisar el resultado en el primer push, no asumirlo.
 - Origen: Lab 3 (2026-10-07).
+
+### L-074 · Los PRAGMA de SQLite valen por conexión; con un pool, un PRAGMA y la sentencia siguiente pueden no compartirla
+- **Error:** un test hacía `PRAGMA foreign_keys = OFF` y luego un `INSERT` por el cliente del ORM (con pool). En el CI falló de forma
+  intermitente con `FOREIGN KEY constraint failed`; en el equipo de desarrollo pasaba siempre y no se pudo reproducir.
+- **Regla:** todo lo que dependa de un estado por conexión (PRAGMA, `SET` de sesión, transacciones manuales) se ejecuta en UNA conexión
+  garantizada: conexión directa del driver (`node:sqlite`, `better-sqlite3`) o pool de tamaño 1. Un test intermitente solo en el CI no se
+  "relanza y listo": se busca qué depende del entorno (núcleos, pool, orden, reloj) y se elimina esa dependencia.
+- **Cómo verificarlo:** buscar `PRAGMA` en los tests; el CI debe pasar varias veces seguidas sin relanzar.
+- Origen: restaurante-san-andres, commit 18 (primer CI en GitHub).
+
+### L-075 · El color de marca se mide, no se elige a ojo: texto blanco sobre naranja no pasa AA
+- **Error:** el primer instinto fue botón naranja `#E8590C` con texto blanco; medido da 3,6:1 (AA exige 4,5:1 en texto pequeño).
+- **Regla:** al definir tokens, calcular el contraste de cada par texto/fondo y escribir en el propio CSS cuál se usa (texto sobre acento = tinta oscura, 5,0:1; acento como texto sobre claro = versión oscurecida `#C2410C`, 5,2:1). Un acento necesita dos variantes: relleno y texto.
+- **Cómo verificarlo:** script de razón de contraste WCAG sobre los tokens, más axe en el e2e (ver L-059).
+- Origen: sistema «Naranja señal», `09-diseno-visual/` (2026-10-07).
+
+### L-076 · Una captura de móvil con Edge headless a menos de ~500 px recorta, no reacomoda
+- **Error:** con `--window-size=390` la página parecía desbordar (tarjetas cortadas); el ancho real de maquetación era ~500 px y la captura solo recortaba. Además el plugin `playwright` no arrancó porque busca Chrome en una ruta que no existe.
+- **Regla:** antes de "arreglar" un desborde visto en captura, confirmar el ancho real de la ventana; probar el móvil a 500 px o con emulación de dispositivo. Si Playwright no tiene Chrome, usar Edge headless (`msedge --headless=new --screenshot=…`) o `npx playwright install chrome`.
+- Origen: `09-diseno-visual/` (2026-10-07).
+
+### L-077 · Un acento usado en todos los botones deja de ser señal
+- **Error:** al aplicar «Naranja señal» a Cocina, los 7 botones de acción salieron naranjas; en la captura la pantalla gritaba y no se veía qué hacer primero.
+- **Regla:** el acento marca **una** cosa por zona (aquí: la barra y el botón del pedido que sigue en cada columna); el resto, contorno neutro. Revisar la captura contando cuántos elementos usan el acento: si son más de uno o dos por vista, está decorando.
+- **Cómo verificarlo:** captura con datos reales (varios pedidos), no con un solo caso.
+- Origen: prueba en Cocina de restaurante-san-andres (2026-10-07).
+
+### L-078 · "Esperar a que terminen las animaciones" no sirve si todavía no empezaron: se congelan
+- **Error:** una prueba de accesibilidad (axe) esperaba a que las animaciones finitas terminaran antes de medir. Justo después de navegar la lista de
+  animaciones estaba vacía, la espera pasaba de inmediato y se medía a mitad de un fade-in (contraste mal): falló 1 de cada 6 veces en una pantalla.
+- **Regla:** las pruebas que miden estilos (contraste, posiciones, capturas) congelan animaciones y transiciones (`animation: none; transition: none`)
+  y esperan dos cuadros de dibujo, en vez de esperar a que "terminen". Una condición del tipo "todos los X cumplen" sobre una lista que puede estar
+  vacía se cumple trivialmente. Una prueba intermitente se repite 20+ veces (`--repeat-each`) antes y después del arreglo.
+- **Cómo verificarlo:** `playwright test --repeat-each=24` sobre la prueba sospechosa: 24 de 24.
+- Origen: restaurante-san-andres, commit 19 (e2e de accesibilidad).
