@@ -11,7 +11,7 @@
   `02-sistema-naranja-senal.md`, `tokens.css`, `muestra.html` (verificada en claro/oscuro, escritorio/móvil con Edge headless),
   `CLAUDE-diseno.md.plantilla` para pegar en cada proyecto.
 - Lecciones L-075 (contraste del color de marca) y L-076 (captura móvil headless). Playwright falló (falta Chrome): ver `HERRAMIENTAS-Y-PLUGINS.md`.
-- Prueba real en la pantalla Cocina del restaurante (rama local `prueba/naranja-senal-cocina`, sin commit): documentada en `02-sistema-naranja-senal.md`; lección L-077 (renumeradas: L-069 a L-071 ya las usaba otra sesión).
+- Prueba real en la pantalla Cocina del restaurante (probada y luego revertida: el repo del restaurante es solo de lectura; el ejemplo quedó en `09-diseno-visual/ejemplo-cocina/`): documentada en `02-sistema-naranja-senal.md`; lección L-077 (renumeradas: L-069 a L-071 ya las usaba otra sesión).
 - Superdesign no se instaló (opcional, de pago); el sistema está validado solo en la muestra, aún no en un proyecto real.
 
 ## 2026-10-07 (laboratorios) — Plugins documentados y Lab 1

@@ -47,7 +47,7 @@ idempotencia por clave, multi-tenant, concurrencia optimista con versión de fil
 validarse con un test contra el motor real la primera vez que se usen, y la lección resultante se agrega aquí.
 
 **Brechas conocidas:**
-- Diseño visual: «Naranja señal» validado solo en la muestra y en la pantalla Cocina (rama local sin integrar); faltan logotipo, paleta de gráficos y probarlo en más pantallas.
+- Diseño visual: «Naranja señal» validado solo en la muestra y en la pantalla Cocina (ejemplo en `09-diseno-visual/ejemplo-cocina/`, nada integrado en el repo); faltan logotipo, paleta de gráficos y probarlo en más pantallas.
 - Lecciones de frontend, accesibilidad y pruebas de punta a punta (Playwright): casi inexistentes. El proyecto de
   referencia ya mide cobertura (95 %), tiene e2e en escritorio y móvil, axe, propiedades, mutación (84 %) y un CI escrito; **el CI aún no se ejecutó en GitHub** y el e2e no recorre las pantallas de Comandas/Cocina/Caja con clics (detalle en `06-pruebas/02`).
 - Despliegue en la nube, contenedores, CI/CD, monitoreo en producción.

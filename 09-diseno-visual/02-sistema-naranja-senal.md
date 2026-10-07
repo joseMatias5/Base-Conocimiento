@@ -47,8 +47,7 @@ Regla: **nunca texto blanco sobre `--acento`**; si se necesita blanco, usar `--a
 
 ## Prueba real: pantalla Cocina del restaurante (2026-10-07)
 
-Rama local `prueba/naranja-senal-cocina` en `D:\Proyecto\Clonado del repo\restaurante-san-andres` (sin commit ni push):
-`src/app/cocina/page.tsx` (tablero y tarjetas; los modales no se tocaron) + `src/app/cocina/cocina.css` (todo bajo `.ns`, no afecta otras pantallas).
+Se probó sobre `src/app/cocina/` del restaurante y **el repo ya quedó como estaba** (rama de prueba borrada, nada enviado; regla: el repo es solo de lectura). El resultado se guardó aquí como ejemplo en `ejemplo-cocina/` (`page.tsx.txt` y `cocina.css`: tablero y tarjetas, modales sin tocar; todo bajo `.ns`, no afecta otras pantallas).
 Captura: `capturas/cocina-escritorio.png`.
 
 - **Antes:** Inter, tarjetas con radio 14, sombras y brillo, emojis, tres colores de estado (ámbar/azul/verde) y botones de colores distintos, animaciones de entrada, pulso y sacudida.
@@ -56,7 +55,7 @@ Captura: `capturas/cocina-escritorio.png`.
 - **Uso del naranja como señal:** barra de 4 px en el pedido que *sigue en la fila*, y botón naranja solo en el **primer** pedido de cada columna (los demás, contorno). La primera versión pintó los 7 botones de naranja y la señal se diluyó; se corrigió mirando la captura (L-077).
 - **Verificación:** `tsc` y `eslint` limpios, 873 tests rápidos verdes, axe en Cocina (escritorio y móvil) con cero violaciones, build correcto.
 - **No verificado:** pedidos demorados (≥15 min: no se pudo retrasar la hora en la prueba), los cuatro modales con el estilo nuevo, la tipografía sin red (el POS puede estar offline: autoalojar IBM Plex).
-- **Ojo de equipo:** el frontend es de Agus según el `CLAUDE.md` del proyecto; esto es una propuesta para revisar con ellos antes de integrarla.
+- **Ojo de equipo:** el frontend es de Agus según el `CLAUDE.md` del proyecto; esto es solo un ejemplo; cualquier integración la decide el equipo, no esta base.
 
 ## Cómo evoluciona (perfeccionarlo)
 
