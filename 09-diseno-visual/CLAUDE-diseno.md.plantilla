@@ -1,0 +1,15 @@
+## Diseño visual (sistema «Naranja señal»; fuente: D:\BaseConocimiento\09-diseno-visual\)
+
+Antes de crear o cambiar cualquier pantalla: usar `frontend-design:frontend-design`, leer `tokens.css` y `muestra.html`.
+
+- Tokens: solo `var(--…)` de `tokens.css`; ningún color, tamaño ni espacio suelto en componentes.
+- Tipografía: IBM Plex Sans (300/400/500/700); Plex Mono solo en códigos e identificadores. Cifras con `tabular-nums`.
+- Color: neutros grafito + **un** acento naranja. Texto sobre `--acento` = `--tinta` (nunca blanco). Verde/ámbar/rojo solo para estados.
+- Espacio: ritmo de 8 px. Filas de tabla de 32 px. Un solo radio (4 px). Bordes de 1 px. **Sin sombras.**
+- Firma: barra naranja de 4 px a la izquierda de lo actual o seleccionado. No añadir otros adornos.
+- Prohibido: Inter/Roboto/Arial, degradados (violeta o cualquiera), fila de tres tarjetas iguales, mayúsculas espaciadas sobre
+  títulos, "A · B · C", "→" en enlaces, numeración 01/02/03 sin secuencia real, resaltar una palabra del titular,
+  entradas animadas en cada sección.
+- Textos: voz activa; el botón dice lo que hace; mismo nombre en todo el flujo; errores con causa y solución; vacíos que invitan a actuar.
+- Toda pantalla incluye estados vacío, cargando y error, foco visible, `prefers-reduced-motion` y adaptación a móvil.
+- Verificación: capturar en escritorio y móvil (claro y oscuro) y corregir con observaciones concretas; contraste AA medido.

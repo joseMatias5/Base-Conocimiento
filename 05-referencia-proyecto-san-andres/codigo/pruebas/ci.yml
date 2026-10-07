@@ -1,0 +1,97 @@
+name: CI
+
+# Ningún merge con pruebas, tipos, lint o build en rojo (TESTING.md §10). Las pruebas e2e y la mutación van en trabajos aparte.
+on:
+  pull_request:
+  push:
+    branches: [master, backend]
+  workflow_dispatch:
+  schedule:
+    # Mutation testing: lunes 06:00 UTC (corre solo el trabajo "mutacion", no bloquea los PR).
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # No hace falta descargar el binario de Electron para probar ni compilar la web.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  # En CI no hay .env: las pruebas usan bases temporales o simuladas (nunca la dev.db) y la sesión, un secreto aleatorio.
+  DATABASE_URL: 'file:./ci.db'
+
+jobs:
+  calidad:
+    name: Tipos, lint, pruebas con cobertura y build
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Chequeo de tipos
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Pruebas (suite completa, con umbrales de cobertura)
+        run: npm run test:cobertura
+      - name: Build de producción
+        run: npm run build
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e "const t=require('./coverage/coverage-summary.json').total; console.log('Cobertura → líneas '+t.lines.pct+'% · ramas '+t.branches.pct+'% · funciones '+t.functions.pct+'%')"
+          fi
+
+  e2e:
+    name: Pruebas de punta a punta (escritorio y móvil)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+        env:
+          CI: 'true'
+      - name: Informe de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  mutacion:
+    name: Mutation testing (semanal o manual)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:mutacion
+      - name: Informe de mutación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-mutacion
+          path: reports/mutation/
+          retention-days: 30

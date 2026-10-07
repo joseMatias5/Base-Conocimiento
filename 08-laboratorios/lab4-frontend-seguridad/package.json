@@ -1,0 +1,13 @@
+{
+  "name": "lab4-frontend-seguridad",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "audit": "npm audit --audit-level=high"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0"
+  }
+}

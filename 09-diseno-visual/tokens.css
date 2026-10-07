@@ -1,0 +1,61 @@
+/* Sistema de diseño personal «Naranja señal» — tokens.
+   Fuente única: D:\BaseConocimiento\09-diseno-visual\. Copiar a src/styles/tokens.css del proyecto.
+   Contrastes medidos (WCAG): tinta/papel 17,8 · apagado/papel 6,2 · acento-texto/papel 5,2 · tinta sobre acento 5,0. */
+
+:root {
+  /* Color: neutros grafito (fríos, no cálidos) + UN acento naranja. */
+  --papel:        #FFFFFF;
+  --fondo:        #F4F5F6;   /* lienzo de la app */
+  --linea:        #E3E5E8;   /* bordes de 1px */
+  --linea-fuerte: #C9CDD3;
+  --apagado:      #5B616B;   /* texto secundario */
+  --tinta:        #16181D;   /* texto principal (no es negro puro) */
+
+  --acento:        #E8590C;  /* relleno, marca, gráficos. Texto SOBRE él: --tinta */
+  --acento-texto:  #C2410C;  /* acento usado como texto/enlace sobre claro (5,2:1) */
+  --acento-suave:  #FFEDD5;  /* fondo de fila seleccionada / aviso */
+  --acento-tinta:  #9A3412;  /* texto sobre --acento-suave (6,4:1) */
+
+  /* Estados: sólo cuando significan algo; nunca decorativos. */
+  --ok:     #1F7A4D;
+  --aviso:  #8A5A00;
+  --error:  #B42318;
+
+  /* Tipografía: una familia sans + mono sólo para códigos/identificadores. */
+  --fuente:      "IBM Plex Sans", system-ui, sans-serif;
+  --fuente-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --texto-xs: 0.75rem;   /* 12 */
+  --texto-sm: 0.875rem;  /* 14 — celdas de tabla */
+  --texto-md: 1rem;      /* 16 — cuerpo */
+  --texto-lg: 1.5rem;    /* 24 — título de sección */
+  --texto-xl: 2.5rem;    /* 40 — título de pantalla / cifra clave */
+  --peso-ligero: 300;
+  --peso-fuerte: 700;
+
+  /* Espacio: ritmo de 8px. */
+  --e1: 4px;  --e2: 8px;  --e3: 16px;  --e4: 24px;  --e5: 32px;  --e6: 48px;  --e7: 64px;
+
+  /* Forma: un solo radio; sin sombras (la jerarquía la dan bordes y fondo). */
+  --radio: 4px;
+  --fila-tabla: 32px;
+  --foco: 2px solid var(--acento-texto);
+}
+
+/* Modo oscuro: sigue al sistema salvo que se fije data-tema="claro"; data-tema="oscuro" lo fuerza. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --papel: #1A1D23; --fondo: #101216; --linea: #2A2E36; --linea-fuerte: #3A3F49;
+    --apagado: #A3A9B3; --tinta: #E6E8EB;
+    --acento: #FF7A2F; --acento-texto: #FF8F4F; --acento-suave: #3A2212; --acento-tinta: #FFC9A3;
+    --ok: #4CC38A; --aviso: #E0A526; --error: #FF6B5E;
+  }
+}
+:root[data-tema="oscuro"] {
+  --papel: #1A1D23; --fondo: #101216; --linea: #2A2E36; --linea-fuerte: #3A3F49;
+  --apagado: #A3A9B3; --tinta: #E6E8EB;
+  --acento: #FF7A2F; --acento-texto: #FF8F4F; --acento-suave: #3A2212; --acento-tinta: #FFC9A3;
+  --ok: #4CC38A; --aviso: #E0A526; --error: #FF6B5E;
+}
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+:focus-visible { outline: var(--foco); outline-offset: 2px; }

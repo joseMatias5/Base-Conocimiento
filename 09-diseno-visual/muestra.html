@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muestra Naranja señal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+@import url("tokens.css");
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tinta);font:400 var(--texto-md)/1.5 var(--fuente)}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav{background:var(--papel);border-right:1px solid var(--linea);padding:var(--e4) 0}
+nav h1{font-size:var(--texto-md);font-weight:var(--peso-fuerte);margin:0 var(--e4) var(--e4)}
+nav a{display:block;padding:var(--e2) var(--e4);color:var(--apagado);text-decoration:none;border-left:4px solid transparent;font-size:var(--texto-sm)}
+nav a[aria-current]{color:var(--tinta);font-weight:500;border-left-color:var(--acento);background:var(--acento-suave);color:var(--acento-tinta)}
+nav a:hover{color:var(--tinta)}
+main{padding:var(--e5) var(--e6);max-width:1100px}
+h2{font-size:var(--texto-xl);font-weight:var(--peso-ligero);line-height:1.1;margin:0 0 var(--e4);letter-spacing:-.01em}
+h3{font-size:var(--texto-lg);font-weight:500;margin:var(--e5) 0 var(--e3)}
+.cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:var(--e3);margin-bottom:var(--e4)}
+.cifra{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);padding:var(--e3)}
+.cifra:first-child{border-left:4px solid var(--acento)}
+.cifra small{display:block;color:var(--apagado);font-size:var(--texto-sm)}
+.cifra b{font-size:var(--texto-xl);font-weight:var(--peso-ligero);font-variant-numeric:tabular-nums}
+.tabla-caja{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:var(--texto-sm);font-variant-numeric:tabular-nums}
+th{white-space:nowrap;text-align:left;font-weight:500;color:var(--apagado);padding:0 var(--e3);height:var(--fila-tabla);border-bottom:1px solid var(--linea-fuerte)}
+td{white-space:nowrap;padding:0 var(--e3);height:var(--fila-tabla);border-bottom:1px solid var(--linea)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+tr[aria-selected="true"] td{background:var(--acento-suave);color:var(--acento-tinta)}
+tr[aria-selected="true"] td:first-child{box-shadow:inset 4px 0 0 var(--acento)}
+code{font-family:var(--fuente-mono);font-size:var(--texto-xs)}
+.estado{font-weight:500}.estado.ok{color:var(--ok)}.estado.aviso{color:var(--aviso)}.estado.error{color:var(--error)}
+.acciones{display:flex;gap:var(--e2);flex-wrap:wrap;align-items:end}
+label{flex:1 1 140px;display:grid;gap:var(--e1);font-size:var(--texto-sm);color:var(--apagado)}
+input,select{font:inherit;color:var(--tinta);background:var(--papel);border:1px solid var(--linea-fuerte);border-radius:var(--radio);height:40px;padding:0 var(--e2);min-width:0;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:var(--foco);outline-offset:2px}
+button{flex:0 0 auto;font:500 var(--texto-sm)/1 var(--fuente);height:40px;padding:0 var(--e3);border-radius:var(--radio);border:1px solid var(--linea-fuerte);background:var(--papel);color:var(--tinta);cursor:pointer}
+button.primario{background:var(--acento);border-color:var(--acento);color:var(--tinta)}
+button:hover{border-color:var(--tinta)}
+.vacio{background:var(--papel);border:1px dashed var(--linea-fuerte);border-radius:var(--radio);padding:var(--e5);color:var(--apagado)}
+.vacio b{display:block;color:var(--tinta);font-weight:500;margin-bottom:var(--e1)}
+@media (max-width:720px){.app{grid-template-columns:1fr}nav{border-right:0;border-bottom:1px solid var(--linea);padding:var(--e3) 0}main{padding:var(--e4) var(--e3)}h2{font-size:var(--texto-lg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav aria-label="Principal">
+    <h1>Restaurante San Andrés</h1>
+    <a href="#" aria-current="page">Caja</a>
+    <a href="#">Comandas</a>
+    <a href="#">Cocina</a>
+    <a href="#">Inventario</a>
+    <a href="#">Historial</a>
+  </nav>
+  <main>
+    <h2>Caja del turno</h2>
+    <div class="cifras">
+      <div class="cifra"><small>Cobrado hoy</small><b>$ 482.300</b></div>
+      <div class="cifra"><small>Mesas abiertas</small><b>7</b></div>
+      <div class="cifra"><small>Ticket promedio</small><b>$ 18.550</b></div>
+    </div>
+    <div class="tabla-caja">
+      <table>
+        <thead><tr><th>Cobro</th><th>Mesa</th><th>Medio</th><th>Estado</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          <tr><td><code>C-0412</code></td><td>Mesa 4</td><td>Efectivo</td><td class="estado ok">Cobrado</td><td class="num">$ 24.800</td></tr>
+          <tr aria-selected="true"><td><code>C-0413</code></td><td>Mesa 9</td><td>Tarjeta</td><td class="estado aviso">Pendiente</td><td class="num">$ 61.250</td></tr>
+          <tr><td><code>C-0414</code></td><td>Mesa 2</td><td>Transferencia</td><td class="estado error">Rechazado</td><td class="num">$ 9.900</td></tr>
+          <tr><td><code>C-0415</code></td><td>Barra</td><td>Efectivo</td><td class="estado ok">Cobrado</td><td class="num">$ 7.400</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>Registrar cobro</h3>
+    <form class="acciones" onsubmit="return false">
+      <label>Mesa<select><option>Mesa 9</option><option>Mesa 2</option></select></label>
+      <label>Importe<input inputmode="decimal" value="61.250"></label>
+      <button class="primario">Registrar cobro</button>
+      <button type="button">Cancelar</button>
+    </form>
+    <h3>Estado vacío</h3>
+    <div class="vacio"><b>No hay cobros anulados en este turno</b>Cuando anules un cobro, aparecerá aquí con el motivo.</div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,194 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+// Montos de dinero: enteros en CENTAVOS ($1.250,50 = 125050). La API sigue hablando en pesos;
+// la conversión se hace en src/lib/money.ts. Ver docs/auditoria/commit-09-dinero-en-centavos.md.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  pin       String   @unique
+  password  String   @default("")
+  rol       String   @default("MOZO") // ADMIN, COCINERO, MOZO
+  activo    Boolean  @default(true)
+  pedidos   Pedido[]
+  ventas    Venta[]
+  historial HistorialPedido[]
+  createdAt DateTime @default(now())
+}
+
+model Mesa {
+  id        Int      @id @default(autoincrement())
+  numero    Int      @unique
+  capacidad Int      @default(4)
+  estado    String   @default("libre") // libre, ocupada, esperando
+  sector    String   @default("salon") // salon, barra
+  forma     String   @default("round") // round, square, tall-bar
+  posX      Float    @default(0)
+  posY      Float    @default(0)
+  activa    Boolean  @default(true)
+  pedidos   Pedido[]
+  ventas    Venta[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Categoria {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  icono     String     @default("utensils")
+  orden     Int        @default(0)
+  productos Producto[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Producto {
+  id           Int         @id @default(autoincrement())
+  nombre       String
+  descripcion  String      @default("")
+  precio       Int         // centavos (ver src/lib/money.ts)
+  categoriaId  Int
+  categoria    Categoria   @relation(fields: [categoriaId], references: [id])
+  disponible   Boolean     @default(true)
+  imagen       String      @default("")
+  itemsPedido  ItemPedido[]
+  receta       RecetaItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Pedido {
+  id          Int          @id @default(autoincrement())
+  mesaId      Int
+  mesa        Mesa         @relation(fields: [mesaId], references: [id])
+  estado      String       @default("pendiente") // pendiente, preparando, listo, entregado, cancelado
+  items       ItemPedido[]
+  historial   HistorialPedido[]
+  total       Int          @default(0) // centavos
+  notas       String       @default("")
+  creadoEn    DateTime     @default(now())
+  actualizadoEn DateTime   @updatedAt
+  entregadoEn DateTime?
+  creadoPorId Int?
+  creadoPor   Usuario?     @relation(fields: [creadoPorId], references: [id])
+  ventas      Venta[]
+}
+
+model HistorialPedido {
+  id        Int      @id @default(autoincrement())
+  pedidoId  Int
+  pedido    Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  accion    String
+  detalle   String
+  motivo    String   @default("")
+  usuarioId Int?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model ItemPedido {
+  id         Int      @id @default(autoincrement())
+  pedidoId   Int
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  cantidad   Int      @default(1)
+  notas      String   @default("")
+  precio     Int      // centavos: precio del producto al momento del pedido
+  createdAt  DateTime @default(now())
+}
+
+model Insumo {
+  id            Int               @id @default(autoincrement())
+  nombre        String
+  unidad        String            @default("unidad") // kg, litro, unidad, paquete
+  stockActual   Float             @default(0)
+  stockMinimo   Float             @default(5)
+  precioUnitario Int              @default(0) // centavos
+  proveedorId   Int?
+  proveedor     Proveedor?        @relation(fields: [proveedorId], references: [id])
+  recetas       RecetaItem[]
+  movimientos   MovimientoStock[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Proveedor {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  contacto  String   @default("")
+  telefono  String   @default("")
+  email     String   @default("")
+  direccion String   @default("")
+  notas     String   @default("")
+  insumos   Insumo[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CostoFijo {
+  id          Int      @id @default(autoincrement())
+  concepto    String
+  monto       Int      // centavos
+  tipo        String   @default("fijo") // fijo, variable
+  periodicidad String  @default("mensual") // diario, semanal, mensual
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Venta {
+  id                   Int      @id @default(autoincrement())
+  pedidoId             Int?
+  pedido               Pedido?  @relation(fields: [pedidoId], references: [id])
+  mesaId               Int?
+  mesa                 Mesa?    @relation(fields: [mesaId], references: [id])
+  mesaNumero           Int?
+  total                Int      // centavos (negativo en una anulación)
+  propina              Int      @default(0) // centavos
+  metodoPago           String   @default("efectivo") // efectivo, tarjeta, transferencia, dividido
+  cajeroId             Int?
+  cajero               Usuario? @relation(fields: [cajeroId], references: [id])
+  numeroTicket         String   @default("")
+  numeroControlInterno String   @default("")
+  items                Int      @default(0)
+  fechaCobro           DateTime @default(now())
+  createdAt            DateTime @default(now())
+  movimientosStock     MovimientoStock[]
+}
+
+// Receta de un producto: cuánto de cada insumo consume UNA unidad vendida (en la unidad del insumo).
+model RecetaItem {
+  id         Int      @id @default(autoincrement())
+  productoId Int
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  insumoId   Int
+  insumo     Insumo   @relation(fields: [insumoId], references: [id])
+  cantidad   Float
+
+  @@unique([productoId, insumoId])
+}
+
+// Cada cambio automático de stock: el consumo de una venta (negativo) y su reintegro al anularla (positivo).
+// Anular revierte exactamente estos movimientos, aunque la receta haya cambiado después de la venta.
+model MovimientoStock {
+  id        Int      @id @default(autoincrement())
+  insumoId  Int
+  insumo    Insumo   @relation(fields: [insumoId], references: [id])
+  cantidad  Float
+  motivo    String // VENTA, ANULACION, AJUSTE
+  detalle   String   @default("") // texto libre (p. ej. el motivo de un ajuste manual)
+  ventaId   Int?
+  venta     Venta?   @relation(fields: [ventaId], references: [id], onDelete: SetNull)
+  usuarioId Int?
+  createdAt DateTime @default(now())
+
+  @@index([ventaId])
+}

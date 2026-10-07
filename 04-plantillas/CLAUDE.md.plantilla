@@ -1,0 +1,96 @@
+# CLAUDE.md — [NOMBRE DEL PROYECTO]
+
+> Copiar este archivo a la raíz del proyecto nuevo como `CLAUDE.md` y completar los campos entre corchetes.
+> Contiene lo que Claude debe leer **antes** de escribir código. La base de conocimiento completa está en
+> `D:\BaseConocimiento\` (ver README).
+
+## 0. Contexto del proyecto (completar)
+
+- **Qué es:** [una frase]
+- **Usuarios y roles:** [admin, cajero, ...]
+- **Dónde corre:** [escritorio / LAN / nube] · **Usuarios simultáneos:** [N] · **Sin internet:** [sí/no]
+- **Stack:** [lenguaje, framework, ORM, base de datos + versión] (ADR: `docs/adr/0001-stack.md`, `0002-base-de-datos.md`)
+- **Datos sensibles:** [dinero / stock / personales] · **Datos existentes a migrar:** [sí/no]
+- **División de trabajo:** backend = [carpetas] · frontend = [carpetas / persona]. Un cambio de contrato se avisa antes.
+
+## 1. Antes de empezar cualquier tarea
+
+1. Leer `D:\BaseConocimiento\01-fundamentos\LECCIONES-APRENDIDAS.md` y la fase que corresponda de `GUIA-APP-ROBUSTA.md`.
+2. Si la tarea toca datos: leer `D:\BaseConocimiento\03-base-de-datos\` (transacciones y ABM).
+3. Si es un proyecto nuevo: seguir las fases 0–6 de la guía. Preguntar **en una sola tanda** (máx. 4 preguntas) solo lo que cambia el diseño.
+4. Reformular el requerimiento en 2–3 líneas; ubicar capa y módulo; listar clases/funciones y su responsabilidad.
+5. Si una decisión tiene alternativas con consecuencias (motor, centavos vs decimal, cuándo descontar stock): **preguntar y registrar en un ADR** (L-055).
+6. Leer el código real antes de editarlo (L-057). Verificar los comportamientos antes de documentarlos (L-050).
+
+## 2. Arquitectura (resumen; detalle en `02-arquitectura/`)
+
+- Capas: Presentación → Aplicación → Dominio ← Infraestructura. El dominio no conoce frameworks, base ni HTTP.
+- Estructura por feature: `modules/<feature>/{domain,application,infrastructure,presentation}`; composición en un solo lugar.
+- SOLID, GRASP (Information Expert, Creator, Controller, Low Coupling, High Cohesion, Polymorphism, Pure Fabrication,
+  Indirection, Protected Variations) y GoF **solo cuando resuelven un problema presente** (YAGNI/KISS).
+- Toda dependencia externa detrás de un puerto + Adapter. Sin singletons con estado. Sin lógica de negocio en controladores, UI ni SQL.
+- Un CRUD sin reglas puede ir directo (ruta → validación → repositorio): no forzar capas donde no hay reglas.
+
+## 3. Datos y transacciones (obligatorio)
+
+- **Motor elegido por requisitos** (`03-base-de-datos/01`). SQLite = un escritor: escrituras en fila + test contra el motor real.
+- **Dinero:** enteros en la unidad mínima (o `NUMERIC`), jamás `float`. La API habla en la unidad del usuario; conversión solo en los bordes.
+- **Una operación de negocio = una transacción**, abierta en la capa de aplicación mediante UN helper único (nunca transacciones sueltas en las rutas).
+- **Estados:** máquina explícita; las transiciones se reclaman con **escritura condicional** al inicio (`UPDATE ... WHERE estado IN (...)`, `count == 0` → rechazar) o con versión de fila.
+- **Restricciones en la base:** `NOT NULL`, `UNIQUE`, `CHECK`, `FK`. El código no es la única defensa.
+- **Efectos externos** (correo, eventos en tiempo real, APIs) **después** del `COMMIT`, o por Outbox.
+- **Operaciones contables:** se corrigen con asiento inverso, nunca editando ni borrando; todo movimiento (stock, saldo) con su origen.
+- **Ajustes de saldos/stock:** delta + motivo, nunca reemplazar el valor.
+- **ABM:** seguir `03-base-de-datos/03-abm-robusto.md` (validación en el borde, `UNIQUE` → 409, versión de fila, baja lógica o anulación, paginación con tope).
+- **Migraciones:** versionadas, transaccionales, idempotentes, con respaldo previo y test contra la base real. Nunca `db push`/`migrate dev` en producción.
+
+## 4. Seguridad y API (detalle en `02-arquitectura/03`)
+
+- Toda ruta empieza con autenticación + autorización por rol (y por fila). **Test de matriz de permisos** que falla con rutas sin clasificar.
+- Sesión firmada, `httpOnly`, revocable (usuario activo y rol desde la base en cada petición). CSRF por `Origin`/`Sec-Fetch-Site`.
+- Cálculos de negocio en el servidor; el cliente no decide precios, totales ni stock.
+- Entrada validada con esquemas en el borde → 400 legible, nunca 500. Forma única de error `{ error }`; sin filtrar detalles internos.
+- Secretos: falla cerrado en producción, aleatorios en desarrollo; nunca fijos en el repositorio.
+
+## 5. Pruebas (la norma es `TESTING.md`; contraste y recetas en `D:\BaseConocimiento\06-pruebas\02-...`)
+
+- Copiar `06-pruebas/01-TESTING-guia-tdd.md` a la raíz como `TESTING.md` y leerlo antes de escribir pruebas.
+- TDD estricto en dominio, casos de uso, cálculos, estados y **todo bug**; test-after en adaptadores, UI y *spikes*.
+- Fakes de puertos propios antes que mocks. Ver el plan para separar `test:rapido` de `test:integracion` y medir cobertura.
+
+- Pirámide: muchos unitarios (dominio, casos de uso), algunos de integración, pocos e2e del camino crítico.
+- Todo test que toca datos simula la base explícitamente o usa una base temporal; **nunca** la base del desarrollador.
+- Lo que depende del motor (concurrencia, transacciones con fallo inyectado, migraciones, restricciones) se prueba contra el **motor real**.
+- Cada arreglo lleva un test `REGRESIÓN: ...` que reproduce primero el error.
+- Probar el **payload exacto** que manda cada pantalla antes de endurecer una validación.
+- Correr la suite dos veces seguidas; tiempo límite propio en tests pesados.
+
+## 6. Convenciones de código
+
+- Nombres en el lenguaje del negocio. Funciones cortas, un nivel de abstracción, ≤3 parámetros (si no, objeto).
+- Sin números ni strings mágicos. Comentarios explican el **porqué**.
+- Prohibido: God Class, dominio anémico, `catch` vacío, dependencias circulares, copiar y pegar lógica entre módulos.
+- Archivos del framework (rutas, páginas) exportan solo lo que el framework espera; la lógica va en `lib/`/capas.
+- No correr formateadores sobre archivos enteros dentro de un cambio funcional.
+
+## 7. Cierre de cada bloque de trabajo
+
+Ejecutar y **mostrar el resultado**: tests, build, linter y chequeo de tipos. Si algo falla, decirlo con la salida.
+Luego:
+1. Documento del cambio en `docs/` (qué hace, decisiones, **"Cambios visibles para el frontend"**) y fila en el índice.
+2. Si hubo alguna corrección "a mano": lección en `docs/lecciones-aprendidas.md` y, generalizada, en
+   `D:\BaseConocimiento\01-fundamentos\LECCIONES-APRENDIDAS.md` (Error → Regla → Cómo verificarlo → Origen).
+3. Lista explícita de lo pendiente y de lo que no se pudo verificar.
+
+## 8. Checklist final
+
+**Diseño:** capa y módulo correctos · dominio sin infraestructura · una responsabilidad por clase · dependencias externas con Adapter.
+**Datos:** transacción única · estado reclamado al inicio · restricciones en la base · efectos tras el `COMMIT` · migración probada.
+**Seguridad:** permisos por rol y fila · entrada validada · sin secretos en el repo · sin datos sensibles en logs.
+**Calidad:** tests verdes (incluidos concurrencia y fallo inyectado contra el motor real) · build · linter · tipos.
+**UI:** mobile-first, tokens de diseño, accesibilidad básica, muestra `data.error`, deshabilita el botón al enviar.
+
+## 9. Cuando haya dudas
+
+Legibilidad y simplicidad sobre el patrón más elegante · la opción que reduce acoplamiento · decisiones significativas en
+`docs/adr/NNNN-titulo.md` · ante ambigüedad, preguntar antes de asumir. El usuario escribe en español: responder en español.

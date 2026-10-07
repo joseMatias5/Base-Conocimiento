@@ -1,0 +1,15 @@
+# ESCRITO PERO NO CONSTRUIDO: este equipo no tiene Docker. Construir desde 08-laboratorios/lab2-csharp-cobros:
+#   docker build -f ../lab3-respaldo-ci/Dockerfile.lab2-api -t lab2-api .
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY src/ src/
+RUN dotnet publish src/Api/Api.csproj -c Release -o /app --no-self-contained
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /app
+COPY --from=build /app .
+# Sin secretos en la imagen: la cadena de conexión llega por variable de entorno ConnectionStrings__Base (L-023).
+USER app
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Api.dll"]

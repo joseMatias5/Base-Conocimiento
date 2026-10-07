@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caja del restaurante</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body>
+  <main>
+    <h1>Caja</h1>
+    <p id="estado" role="status" aria-live="polite"></p>
+    <p id="error" role="alert" hidden></p>
+
+    <form id="nuevo" aria-labelledby="titulo-nuevo">
+      <h2 id="titulo-nuevo">Nuevo pedido</h2>
+      <label for="cliente">Cliente o mesa</label>
+      <input id="cliente" name="cliente" maxlength="40" autocomplete="off" required>
+      <button type="submit">Crear pedido</button>
+    </form>
+
+    <section aria-labelledby="titulo-lista">
+      <h2 id="titulo-lista">Pedidos</h2>
+      <ul id="lista"></ul>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

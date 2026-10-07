@@ -1,0 +1,28 @@
+# ESCRITO PERO NO EJECUTADO: el laboratorio no tiene remoto de GitHub. Equivale a `npm run ci` (src/ci.mjs), que sí se ejecutó en local.
+# Corre en Windows porque los laboratorios usan los binarios de PostgreSQL para Windows (@embedded-postgres/windows-x64).
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  laboratorios:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: '08-laboratorios/*/package-lock.json' }
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 8.0.x }
+      - run: npm ci
+        working-directory: 08-laboratorios/lab1-postgres-concurrencia
+      - run: npm ci
+        working-directory: 08-laboratorios/lab3-respaldo-ci
+      - run: npm run ci
+        working-directory: 08-laboratorios/lab3-respaldo-ci
