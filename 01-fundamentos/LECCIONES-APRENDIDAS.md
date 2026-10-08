@@ -308,3 +308,38 @@ Origen: proyecto y referencia, para poder ver el caso concreto.
   vacía se cumple trivialmente. Una prueba intermitente se repite 20+ veces (`--repeat-each`) antes y después del arreglo.
 - **Cómo verificarlo:** `playwright test --repeat-each=24` sobre la prueba sospechosa: 24 de 24.
 - Origen: restaurante-san-andres, commit 19 (e2e de accesibilidad).
+
+### L-079 · Un temporizador `async` puede solaparse consigo mismo; y un test de carrera debe fallar sin el arreglo
+- **Error:** un `setInterval(async …)` que consulta la base cada 30 s dejó dos ejecuciones en vuelo cuando la consulta tardó más que el intervalo. La primera cerró el
+  stream; la segunda, al fallar, llamó a `controller.error()` y descartó el aviso que aún no se había leído. El primer test que escribí pasaba igual, porque ya
+  había una lectura pendiente que recibía el mensaje a tiempo.
+- **Regla:** en un temporizador asíncrono, no iniciar otra ejecución mientras la anterior sigue (bandera + `finally`). Y todo test de una carrera se prueba **sin** el arreglo
+  (debe fallar) y se repite con él; si pasa en los dos casos, no reproduce nada: ajustar el orden (aquí, dejar terminar las dos ejecuciones antes de leer).
+- **Cómo verificarlo:** `git stash` del arreglo, correr el test (rojo), restaurar (verde), repetir 5+ veces.
+- Origen: restaurante-san-andres, commit 20 (SSE de `/api/events`).
+
+### L-080 · "Fix available" de `npm audit` no significa seguro: puede ser un downgrade
+- **Error:** `npm audit fix` resolvió una cadena de avisos de producción bajando `prisma` a una versión vieja (fuera del rango del aviso) y dejó el cliente en otra, con
+  los motores desparejados. Los `--force` proponían además bajar `concurrently`, `electron-builder` y `eslint-config-next` a versiones anteriores.
+- **Regla:** antes de aceptar un `npm audit fix`, comparar el `package-lock.json` (versiones que suben y que bajan) y, si algo baja, buscar otra vía:
+  `overrides` sobre la dependencia transitoria afectada, o documentar el riesgo aceptado (qué es, dónde corre, cuándo revisar). Separar siempre producción
+  (`--omit=dev`) de desarrollo.
+- **Cómo verificarlo:** `git diff package-lock.json` y `npm ls <paquete>` tras el arreglo; `prisma validate`/`generate`, tests, build y e2e en verde.
+- Origen: restaurante-san-andres, commit 21 (AT-37).
+
+### L-081 · Renombrar el comercio: los valores por defecto viven también en los archivos ya creados
+- **Error (evitado):** al pasar de "Restaurante San Andrés" a "AKROS Café", cambiar solo los valores por defecto del código no alcanza: el `config.json` de una instalación existente
+  conserva el nombre viejo (los defectos solo rigen para instalaciones nuevas) y la carpeta de datos de una app de escritorio puede derivar del nombre del paquete o del producto.
+- **Regla:** antes de renombrar, buscar el nombre en TODO (tickets, instalador, acceso directo, servicio, pantalla de carga, ejemplos, seed, tests y e2e que buscan el título) y decidir qué
+  NO cambia (`name`, `appId`, carpeta de datos: cambiarlos instala como programa distinto o "pierde" la base). Fijar la carpeta de datos explícitamente, y migrar al arrancar solo los valores
+  que sigan siendo exactamente los de ejemplo viejos (lo que el comercio editó no se toca). El título que buscan los e2e cambia en el mismo commit que la pantalla.
+- **Cómo verificarlo:** test de la función de migración (viejo→nuevo, editado→intacto, sin sección→sin error); instalar el nuevo sobre el viejo y comparar la base antes y después.
+- Origen: restaurante-san-andres, commit del cambio de marca (PR #14/#15, 2026-10-07).
+
+### L-082 · Un test que recorre el tiempo paso a paso es lento en el CI: saltar el reloj
+- **Error:** un test avanzaba 12 h de reloj simulado en pasos de 30 s (~1.440 ejecuciones asíncronas con verificación criptográfica real): 0,3 s en la PC de desarrollo, más de 20 s en el
+  runner del CI con cobertura. Se cortó por tiempo y, al quedar una conexión abierta, hizo fallar en cascada a otros 4 tests.
+- **Regla:** para probar un vencimiento no se recorre el tiempo: se adelanta el reloj de un salto (`vi.setSystemTime`) y se deja correr un solo ciclo. Un test que falla "en cadena"
+  es señal de recursos que no se liberaron: buscar el primero que cayó.
+- **Cómo verificarlo:** correr la suite con cobertura (como el CI) y mirar la duración por test; ninguno cerca del límite.
+- Origen: restaurante-san-andres, commit 20 (SSE de `/api/events`), PR #16.
