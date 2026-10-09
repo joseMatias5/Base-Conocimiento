@@ -1,5 +1,10 @@
 # Changelog de la base de conocimiento
 
+## 2026-10-09 (frontend-slides) — `09-diseno-visual/05-presentaciones-html-frontend-slides.md`
+- Analizado el artículo de Webreactiva y contrastado con el repo `zarazhangrui/frontend-slides` (MIT; leídos `SKILL.md` y `viewport-base.css`). Veredicto: útil pero secundario; no instalado (skill de terceros con scripts).
+- El artículo está desactualizado (el repo usa escenario fijo 1920×1080 escalado, exporta PDF y despliega a Vercel). Se documentan ideas transferibles: elegir con 3 variantes reales, anti-«AI slop» con variación forzada, `-clamp()` se ignora en silencio, no usar `display` para alternar vistas, no filtrar texto de proceso a la salida.
+- No se probó generando un deck.
+
 ## 2026-10-09 (recursos frontend) — Dos documentos nuevos en `09-diseno-visual/`
 - Analizados `yurimutti/recursos-frontend`, `vanessamarely/recursos-frontend` y `requestly/awesome-frontend-resources` (clonados y leídos completos).
 - `03-recursos-visuales-curados.md`: íconos, tipografía, color/contraste, CSS, ilustraciones, imágenes, prototipado, inspiración, rendimiento y bibliotecas JS, con reglas de uso (licencia, un solo set de íconos, autoalojar fuentes, contraste) y qué evitar.
