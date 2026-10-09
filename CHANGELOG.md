@@ -1,5 +1,11 @@
 # Changelog de la base de conocimiento
 
+## 2026-10-09 (recursos frontend) — Dos documentos nuevos en `09-diseno-visual/`
+- Analizados `yurimutti/recursos-frontend`, `vanessamarely/recursos-frontend` y `requestly/awesome-frontend-resources` (clonados y leídos completos).
+- `03-recursos-visuales-curados.md`: íconos, tipografía, color/contraste, CSS, ilustraciones, imágenes, prototipado, inspiración, rendimiento y bibliotecas JS, con reglas de uso (licencia, un solo set de íconos, autoalojar fuentes, contraste) y qué evitar.
+- `04-recursos-aprendizaje-frontend.md`: referencias canónicas, rutas, práctica, libros, canales en español, y valoración de cada repo.
+- Enlaces probados con script (182): 403/401 = bloqueo a bots (vivos); se quitaron commercecream.com, acefrontend.com y free-css.com (no resuelven) y se corrigieron cssmatic y drawkit. Lo obsoleto marcado con ⚠ sale de conocimiento general. Algunos recursos "agregados" (Phosphor, Fontsource, Penpot, Picsum, etc.) no estaban en los repos y se identifican como tales.
+
 ## 2026-10-07 (orden de lecciones) — Numeración sin repetidos
 - Choque de numeración entre sesiones (L-069 a L-071 usados dos veces; L-054 con "refuerzos" como entradas aparte): las de diseño visual pasaron a L-075 a L-077 (ya citadas así en los documentos), los dos refuerzos de L-054 se plegaron dentro de L-054 como "Se repitió" y de L-069 en adelante las lecciones quedaron en orden numérico.
 - Nuevo `herramientas/verificar-lecciones.py`: siguiente número libre, repetidos y referencias `L-nnn` rotas (hoy: 53 lecciones, L-001 a L-078, sin problemas). Regla de numeración en el encabezado de `LECCIONES-APRENDIDAS.md` y en el README.
